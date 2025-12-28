@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <title>Monitoring Suhu ESP32</title>
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
@@ -18,20 +15,22 @@
       color: white;
       text-align: center;
     }
+
     canvas {
       background: #020617;
       border-radius: 10px;
-      margin-top: 20px;
+      margin: 20px auto;
+      max-width: 800px;
+      max-height: 400px;
     }
   </style>
 </head>
 
 <body>
   <h2>📈 Monitoring Suhu ESP32 (Realtime)</h2>
-  <canvas id="chartSuhu"></canvas>
+  <canvas id="chartSuhu" width="800" height="400"></canvas>
 
   <script>
-    // 🔥 KONFIGURASI FIREBASE
     const firebaseConfig = {
       apiKey: "AIzaSyAz_qRbEo_GpK3s1Pjnxuk1fAxQCT1L89w",
       authDomain: "heatpump-2ba89.firebaseapp.com",
@@ -42,7 +41,6 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // DATA CHART
     const labels = [];
     const dataS1 = [];
     const dataS2 = [];
@@ -64,13 +62,19 @@
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
-          y: { beginAtZero: false }
+          y: {
+            min: 1,
+            max: 60,
+            ticks: {
+              stepSize: 5
+            }
+          }
         }
       }
     });
 
-    // 🔄 AMBIL DATA REALTIME
     database.ref("sensor").on("value", (snapshot) => {
       const data = snapshot.val();
       const waktu = new Date().toLocaleTimeString();
@@ -81,7 +85,6 @@
       dataS3.push(data.suhu3);
       dataAVG.push(data.rata_rata);
 
-      // batasi 20 data terakhir
       if (labels.length > 20) {
         labels.shift();
         dataS1.shift();
@@ -95,5 +98,3 @@
   </script>
 </body>
 </html>
-
-
