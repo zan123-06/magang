@@ -2,35 +2,55 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Monitoring Suhu ESP32</title>
+  <title>Monitoring Suhu ESP32 (Realtime)</title>
 
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Firebase SDK v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
   <style>
     body {
-      font-family: Arial;
-      background: #0f172a;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #0f172a, #020617);
       color: white;
       text-align: center;
     }
 
-    canvas {
-      background: #020617;
-      border-radius: 10px;
+    h2 {
+      margin-top: 20px;
+    }
+
+    .chart-container {
+      width: 860px;
+      height: 420px;
       margin: 20px auto;
-      max-width: 800px;
-      max-height: 400px;
+      background: #020617;
+      border-radius: 14px;
+      padding: 15px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.6);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
     }
   </style>
 </head>
 
 <body>
   <h2>📈 Monitoring Suhu ESP32 (Realtime)</h2>
-  <canvas id="chartSuhu" width="800" height="400"></canvas>
+
+  <div class="chart-container">
+    <canvas id="chartSuhu"></canvas>
+  </div>
 
   <script>
+    // ================= FIREBASE CONFIG =================
     const firebaseConfig = {
       apiKey: "AIzaSyAz_qRbEo_GpK3s1Pjnxuk1fAxQCT1L89w",
       authDomain: "heatpump-2ba89.firebaseapp.com",
@@ -41,12 +61,14 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // ================= DATA =================
     const labels = [];
-    const dataS1 = [];
-    const dataS2 = [];
-    const dataS3 = [];
-    const dataAVG = [];
+    const s1 = [];
+    const s2 = [];
+    const s3 = [];
+    const avg = [];
 
+    // ================= CHART =================
     const ctx = document.getElementById("chartSuhu").getContext("2d");
 
     const chart = new Chart(ctx, {
@@ -54,43 +76,91 @@
       data: {
         labels: labels,
         datasets: [
-          { label: "Sensor 1", data: dataS1, borderWidth: 2 },
-          { label: "Sensor 2", data: dataS2, borderWidth: 2 },
-          { label: "Sensor 3", data: dataS3, borderWidth: 2 },
-          { label: "Rata-rata", data: dataAVG, borderWidth: 3 }
+          {
+            label: "Sensor 1",
+            data: s1,
+            borderColor: "#38bdf8",
+            tension: 0.35,
+            pointRadius: 3
+          },
+          {
+            label: "Sensor 2",
+            data: s2,
+            borderColor: "#fb7185",
+            tension: 0.35,
+            pointRadius: 3
+          },
+          {
+            label: "Sensor 3",
+            data: s3,
+            borderColor: "#fbbf24",
+            tension: 0.35,
+            pointRadius: 3
+          },
+          {
+            label: "Rata-rata",
+            data: avg,
+            borderColor: "#fde047",
+            borderWidth: 3,
+            tension: 0.35,
+            pointRadius: 4
+          }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         scales: {
           y: {
             min: 1,
             max: 60,
             ticks: {
-              stepSize: 5
+              stepSize: 5,
+              color: "#c7d2fe"
+            },
+            grid: {
+              color: "rgba(255,255,255,0.08)"
+            }
+          },
+          x: {
+            ticks: {
+              color: "#c7d2fe"
+            },
+            grid: {
+              color: "rgba(255,255,255,0.04)"
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "white"
             }
           }
         }
       }
     });
 
+    // ================= REALTIME FIREBASE =================
     database.ref("sensor").on("value", (snapshot) => {
       const data = snapshot.val();
-      const waktu = new Date().toLocaleTimeString();
+      if (!data) return;
 
-      labels.push(waktu);
-      dataS1.push(data.suhu1);
-      dataS2.push(data.suhu2);
-      dataS3.push(data.suhu3);
-      dataAVG.push(data.rata_rata);
+      const time = new Date().toLocaleTimeString();
+
+      labels.push(time);
+      s1.push(data.suhu1);
+      s2.push(data.suhu2);
+      s3.push(data.suhu3);
+      avg.push(data.rata_rata);
 
       if (labels.length > 20) {
         labels.shift();
-        dataS1.shift();
-        dataS2.shift();
-        dataS3.shift();
-        dataAVG.shift();
+        s1.shift();
+        s2.shift();
+        s3.shift();
+        avg.shift();
       }
 
       chart.update();
