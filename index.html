@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitoring Suhu ESP32</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+    }
+    canvas {
+      background: #020617;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>📈 Monitoring Suhu ESP32 (Realtime)</h2>
+  <canvas id="chartSuhu"></canvas>
+
+  <script>
+    // 🔥 KONFIGURASI FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyAz_qRbEo_GpK3s1Pjnxuk1fAxQCT1L89w",
+      authDomain: "heatpump-2ba89.firebaseapp.com",
+      databaseURL: "https://heatpump-2ba89-default-rtdb.asia-southeast1.firebasedatabase.appm",
+      projectId: "heatpump-2ba89"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // DATA CHART
+    const labels = [];
+    const dataS1 = [];
+    const dataS2 = [];
+    const dataS3 = [];
+    const dataAVG = [];
+
+    const ctx = document.getElementById("chartSuhu").getContext("2d");
+
+    const chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          { label: "Sensor 1", data: dataS1, borderWidth: 2 },
+          { label: "Sensor 2", data: dataS2, borderWidth: 2 },
+          { label: "Sensor 3", data: dataS3, borderWidth: 2 },
+          { label: "Rata-rata", data: dataAVG, borderWidth: 3 }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: false }
+        }
+      }
+    });
+
+    // 🔄 AMBIL DATA REALTIME
+    database.ref("sensor").on("value", (snapshot) => {
+      const data = snapshot.val();
+      const waktu = new Date().toLocaleTimeString();
+
+      labels.push(waktu);
+      dataS1.push(data.suhu1);
+      dataS2.push(data.suhu2);
+      dataS3.push(data.suhu3);
+      dataAVG.push(data.rata_rata);
+
+      // batasi 20 data terakhir
+      if (labels.length > 20) {
+        labels.shift();
+        dataS1.shift();
+        dataS2.shift();
+        dataS3.shift();
+        dataAVG.shift();
+      }
+
+      chart.update();
+    });
+  </script>
+</body>
+</html>
